@@ -35,6 +35,12 @@ project's `reports/` folder, and API keys are always read from the project's
 - `config.py` — env keys + tunables
 - `search.py` — Tavily client
 - `crawler.py` — requests + trafilatura
-- `llm.py` — OpenRouter client (default `openrouter/free` router + `:free` fallbacks)
+- `llm.py` — OpenRouter client with per-stage free models:
+  - queries → `nvidia/nemotron-3-ultra-550b-a55b:free` (reasoning)
+  - summaries → `google/gemma-4-31b-it:free` (fast extraction)
+  - report → `thinkingmachines/inkling:free` (long-form writing)
+  - NOTE: `qwen/qwen3-next-80b-a3b-instruct:free` was removed — OpenRouter
+    retired its free variant (404: paid-only). Override per stage via
+    `QUERY_MODEL` / `SUMMARY_MODEL` / `REPORT_MODEL` env vars.
 
 Free stack: Tavily free tier + OpenRouter free models + local run.

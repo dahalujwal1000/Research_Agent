@@ -25,23 +25,60 @@ def _get(*names: str, default: str = "") -> str:
 OPENROUTER_API_KEY: str = _get("OPENROUTER_API_KEY", "openrouter_api_key")
 TAVILY_API_KEY: str = _get("TAVILY_API_KEY", "Tavily-API-KEY", "TAVILY-API-KEY")
 
-# Free OpenRouter model. Override with OPENROUTER_MODEL env var.
-# "openrouter/free" auto-routes to any available free model (recommended:
-# free model IDs rotate often, hardcoded :free IDs die fast).
-# Specific current :free IDs are kept as fallbacks.
-OPENROUTER_MODEL: str = _get("OPENROUTER_MODEL", default="openrouter/free")
+# Per-stage models: different jobs benefit from different models.
+# Override any of these with env vars (QUERY_MODEL / SUMMARY_MODEL / REPORT_MODEL).
+QUERY_MODEL: str = _get(
+    "QUERY_MODEL", default="nvidia/nemotron-3-ultra-550b-a55b:free"
+)
+SUMMARY_MODEL: str = _get(
+    "SUMMARY_MODEL", default="google/gemma-4-31b-it:free"
+)
+REPORT_MODEL: str = _get(
+    "REPORT_MODEL", default="thinkingmachines/inkling:free"
+)
 
+# Kept for backwards compat (old .env / old code paths).
+OPENROUTER_MODEL: str = _get("OPENROUTER_MODEL", default=QUERY_MODEL)
+
+# Fallback chain per stage: preferred model first, then openrouter/free
+# auto-router, then the other two stage models (a reasoning model can still
+# summarize, just slower — better than crashing).
 OPENROUTER_FALLBACK_MODELS: tuple[str, ...] = (
     OPENROUTER_MODEL,
-    "nvidia/nemotron-3-ultra-550b-a55b:free",
     "openrouter/free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
     "thinkingmachines/inkling:free",
     "thinkingmachines/inkling-small:free",
     "google/gemma-4-26b-a4b-it:free",
+    "google/gemma-4-31b-it:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
     "nex-agi/nex-n2.5-pro:free",
     "nex-agi/nex-n2.5-mini:free",
     "poolside/laguna-s-2.1:free",
     "liquid/lfm-2.5-2.6b:free",
+)
+
+QUERY_FALLBACKS: tuple[str, ...] = (
+    QUERY_MODEL,
+    "openrouter/free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "thinkingmachines/inkling:free",
+)
+
+SUMMARY_FALLBACKS: tuple[str, ...] = (
+    SUMMARY_MODEL,
+    "openrouter/free",
+    "google/gemma-4-26b-a4b-it:free",
+    "thinkingmachines/inkling-small:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+)
+
+REPORT_FALLBACKS: tuple[str, ...] = (
+    REPORT_MODEL,
+    "openrouter/free",
+    "thinkingmachines/inkling:free",
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
 )
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"

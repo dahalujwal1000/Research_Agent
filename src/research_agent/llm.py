@@ -1,4 +1,10 @@
-"""OpenRouter LLM client with free-model fallback chain."""
+"""OpenRouter LLM client with per-stage models + fallback chains.
+
+Stage routing (all free):
+- Query generation -> reasoning model (good search angles benefit from thought)
+- Per-source summarization -> fast non-reasoning model (clean extraction)
+- Final report -> strong long-form writer (markdown structure, large context)
+"""
 from __future__ import annotations
 
 import requests
@@ -20,7 +26,7 @@ def _call_model(model: str, messages: list[dict], max_tokens: int = 1500) -> str
             "messages": messages,
             "max_tokens": max_tokens,
         },
-        timeout=60,
+        timeout=120,  # reasoning models (nemotron) can be slow: ~7 tok/s
     )
     if resp.status_code in (400, 401, 402, 404, 429):
         raise RuntimeError(f"{resp.status_code}: {resp.text[:300]}")
@@ -41,21 +47,17 @@ def _call_model(model: str, messages: list[dict], max_tokens: int = 1500) -> str
     raise RuntimeError(f"empty content from {model}: {str(data)[:300]}")
 
 
-def chat(messages: list[dict], max_tokens: int = 1500) -> tuple[str, str]:
-    """Try each fallback model in order. Returns (text, model_used)."""
-    if not config.OPENROUTER_API_KEY:
-        raise RuntimeError("Missing OpenRouter key. Set OPENROUTER_API_KEY in .env")
-
-    # Dedupe while preserving order
+def _chat_with(models: list[str], messages: list[dict], max_tokens: int = 1500) -> tuple[str, str]:
+    """Try given models in order. Returns (text, model_used)."""
     seen: set[str] = set()
-    models: list[str] = []
-    for m in config.OPENROUTER_FALLBACK_MODELS:
+    ordered: list[str] = []
+    for m in models:
         if m and m not in seen:
             seen.add(m)
-            models.append(m)
+            ordered.append(m)
 
     last_error = ""
-    for model in models:
+    for model in ordered:
         try:
             print(f"  [llm] trying {model} ...")
             return _call_model(model, messages, max_tokens), model
@@ -66,8 +68,15 @@ def chat(messages: list[dict], max_tokens: int = 1500) -> tuple[str, str]:
     raise RuntimeError(f"All OpenRouter models failed. Last error: {last_error}")
 
 
+def chat(messages: list[dict], max_tokens: int = 1500) -> tuple[str, str]:
+    """Generic chat using the global fallback chain (backwards compat)."""
+    if not config.OPENROUTER_API_KEY:
+        raise RuntimeError("Missing OpenRouter key. Set OPENROUTER_API_KEY in .env")
+    return _chat_with(list(config.OPENROUTER_FALLBACK_MODELS), messages, max_tokens)
+
+
 def generate_queries(topic: str, n: int = 3) -> list[str]:
-    """Topic -> n diverse search queries."""
+    """Topic -> n diverse search queries (reasoning model for better angles)."""
     messages = [
         {
             "role": "system",
@@ -78,14 +87,14 @@ def generate_queries(topic: str, n: int = 3) -> list[str]:
             "content": f"Generate {n} diverse search queries to research this topic thoroughly:\n{topic}",
         },
     ]
-    text, _ = chat(messages, max_tokens=600)
+    text, _ = _chat_with(list(config.QUERY_FALLBACKS), messages, max_tokens=600)
     queries = [q.strip().lstrip("1234567890.-) ").strip('"') for q in text.splitlines()]
     queries = [q for q in queries if q]
     return queries[:n] if queries else [topic]
 
 
 def summarize_source(topic: str, title: str, url: str, text: str) -> str:
-    """Condense one crawled page into key points relevant to topic."""
+    """Condense one crawled page into key points (fast extraction model)."""
     messages = [
         {
             "role": "system",
@@ -96,12 +105,12 @@ def summarize_source(topic: str, title: str, url: str, text: str) -> str:
             "content": f"Topic: {topic}\nSource: {title} ({url})\n\nContent:\n{text}\n\nSummarize into bullets relevant to the topic.",
         },
     ]
-    summary, _ = chat(messages, max_tokens=800)
+    summary, _ = _chat_with(list(config.SUMMARY_FALLBACKS), messages, max_tokens=800)
     return summary
 
 
 def build_report(topic: str, summaries: list[dict]) -> tuple[str, str]:
-    """Merge per-source summaries into executive report with citations."""
+    """Merge per-source summaries into executive report (long-form writer)."""
     joined = "\n\n".join(
         f"### {s['title']}\nURL: {s['url']}\n{s['summary']}" for s in summaries
     )
@@ -121,4 +130,4 @@ def build_report(topic: str, summaries: list[dict]) -> tuple[str, str]:
             "content": f"Topic: {topic}\n\nSource summaries:\n{joined}\n\nWrite the final report in markdown.",
         },
     ]
-    return chat(messages, max_tokens=4000)
+    return _chat_with(list(config.REPORT_FALLBACKS), messages, max_tokens=4000)
