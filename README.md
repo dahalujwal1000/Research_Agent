@@ -20,6 +20,15 @@ python main.py "benefits of drinking green tea"
 # report saved to reports/<topic>-<timestamp>.md
 ```
 
+## Global install (call from anywhere)
+```powershell
+pip install -e .
+research-agent "benefits of drinking green tea"
+```
+This creates a `research-agent` command on PATH. Reports still save to the
+project's `reports/` folder, and API keys are always read from the project's
+`.env` no matter which folder you run from.
+
 ## Files
 - `main.py` — CLI (thin, imports `agent.run` so API/UI can reuse later)
 - `agent.py` — orchestrator

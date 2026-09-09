@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 reports/
+*.egg-info/
+src/research_agent/__pycache__/

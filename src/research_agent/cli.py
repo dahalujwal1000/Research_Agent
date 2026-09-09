@@ -1,6 +1,6 @@
-"""CLI entry: python main.py "your topic" -> reports/<topic>.md
+"""CLI entry: research-agent "your topic" -> reports/<topic>.md
 
-Kept thin so FastAPI/Streamlit can import agent.run() later.
+Kept thin so FastAPI/Streamlit can import research_agent.agent.run() later.
 """
 from __future__ import annotations
 
@@ -11,9 +11,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-import agent  # noqa: E402
+from . import agent  # noqa: E402
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def slugify(topic: str) -> str:
@@ -29,7 +31,7 @@ def main() -> int:
 
     result = agent.run(topic)
 
-    out_dir = Path(__file__).parent / "reports"
+    out_dir = PROJECT_ROOT / "reports"
     out_dir.mkdir(exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     path = out_dir / f"{slugify(topic)}-{stamp}.md"

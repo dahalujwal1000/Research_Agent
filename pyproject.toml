@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-agent"
+version = "1.0.0"
+description = "AI Research Agent — topic in, structured markdown report out"
+requires-python = ">=3.10"
+dependencies = [
+  "requests>=2.31.0",
+  "trafilatura>=1.8.0",
+  "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+research-agent = "research_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
