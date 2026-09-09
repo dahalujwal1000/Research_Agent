@@ -43,6 +43,8 @@ OPENROUTER_MODEL: str = _get("OPENROUTER_MODEL", default=QUERY_MODEL)
 # Fallback chain per stage: preferred model first, then openrouter/free
 # auto-router, then the other two stage models (a reasoning model can still
 # summarize, just slower — better than crashing).
+# poolside/laguna-s-2.1:free is fast (33 tok/s) + 99.8% availability, so it
+# backs up the summarization + report stages (reliable "paid-grade" behavior).
 OPENROUTER_FALLBACK_MODELS: tuple[str, ...] = (
     OPENROUTER_MODEL,
     "openrouter/free",
@@ -51,10 +53,10 @@ OPENROUTER_FALLBACK_MODELS: tuple[str, ...] = (
     "thinkingmachines/inkling-small:free",
     "google/gemma-4-26b-a4b-it:free",
     "google/gemma-4-31b-it:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "poolside/laguna-s-2.1:free",
+    "poolside/laguna-xs-2.1:free",
     "nex-agi/nex-n2.5-pro:free",
     "nex-agi/nex-n2.5-mini:free",
-    "poolside/laguna-s-2.1:free",
     "liquid/lfm-2.5-2.6b:free",
 )
 
@@ -63,12 +65,15 @@ QUERY_FALLBACKS: tuple[str, ...] = (
     "openrouter/free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",
     "thinkingmachines/inkling:free",
+    "poolside/laguna-s-2.1:free",
 )
 
 SUMMARY_FALLBACKS: tuple[str, ...] = (
     SUMMARY_MODEL,
     "openrouter/free",
     "google/gemma-4-26b-a4b-it:free",
+    "poolside/laguna-s-2.1:free",
+    "poolside/laguna-xs-2.1:free",
     "thinkingmachines/inkling-small:free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",
 )
@@ -76,6 +81,7 @@ SUMMARY_FALLBACKS: tuple[str, ...] = (
 REPORT_FALLBACKS: tuple[str, ...] = (
     REPORT_MODEL,
     "openrouter/free",
+    "poolside/laguna-s-2.1:free",
     "thinkingmachines/inkling:free",
     "google/gemma-4-31b-it:free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",

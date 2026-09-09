@@ -39,6 +39,9 @@ project's `reports/` folder, and API keys are always read from the project's
   - queries → `nvidia/nemotron-3-ultra-550b-a55b:free` (reasoning)
   - summaries → `google/gemma-4-31b-it:free` (fast extraction)
   - report → `thinkingmachines/inkling:free` (long-form writing)
+  - poolside `laguna-s-2.1:free` + `laguna-xs-2.1:free` (fast, 99%+ availability)
+    are wired into summary/report fallback chains so those stages get
+    reliable "paid-grade" behavior without paying.
   - NOTE: `qwen/qwen3-next-80b-a3b-instruct:free` was removed — OpenRouter
     retired its free variant (404: paid-only). Override per stage via
     `QUERY_MODEL` / `SUMMARY_MODEL` / `REPORT_MODEL` env vars.
